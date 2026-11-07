@@ -1,0 +1,23 @@
+# сборка
+build/
+build-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+compile_commands.json
+.cache/
+
+# бинарники и объектные файлы
+*.o
+*.obj
+*.a
+*.so
+*.out
+*.exe
+
+# IDE и редакторы
+.vscode/
+.idea/
+.vs/
+*.swp
+*.user
