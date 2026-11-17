@@ -12,6 +12,18 @@ endif()
 
 find_package(Threads REQUIRED)
 
-add_executable(server src/main.cpp)
+# Общие исходники сервера (всё, кроме main.cpp).
+# Их линкуют и исполняемый файл, и тесты — список ведётся в одном месте.
+# Пример: src/storage/in_memory_storage.cpp
+set(SERVER_LIB_SOURCES
+)
+
+add_executable(server ${SERVER_LIB_SOURCES} src/main.cpp)
 target_compile_options(server PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(server PRIVATE Threads::Threads)
+target_include_directories(server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
