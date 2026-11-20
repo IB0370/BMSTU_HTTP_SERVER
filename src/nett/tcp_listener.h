@@ -1,90 +1,35 @@
-#include "tcp_listener.h"
 
-#include <arpa/inet.h>
-#include <cerrno>
-#include <cstring>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <unistd.h>
+
+#include <cstdint>
 
 namespace net {
 
-TcpListener::~TcpListener() {
-    close();
-}
+class TcpListener {
+public:
+    TcpListener() = default;
+    ~TcpListener();
 
-TcpListener::TcpListener(TcpListener&& other) noexcept : fd_(other.fd_) {
-    other.fd_ = -1;
-}
+    TcpListener(const TcpListener&) = delete;
+    TcpListener& operator=(const TcpListener&) = delete;
 
-TcpListener& TcpListener::operator=(TcpListener&& other) noexcept {
-    if (this != &other) {
-        close();
-        fd_ = other.fd_;
-        other.fd_ = -1;
-    }
-    return *this;
-}
+    TcpListener(TcpListener&& other) noexcept;
+    TcpListener& operator=(TcpListener&& other) noexcept;
 
-bool TcpListener::listen_on(uint16_t port, int backlog) {
-    close();
+    // Создаёт сокет, ставит SO_REUSEADDR, делает bind и listen.
+    // Возвращает true при успехе, false при ошибке.
+    bool listen_on(uint16_t port, int backlog = 128);
 
-    // 1. Создаём TCP-сокет (IPv4)
-    int sock_fd = ::socket(AF_INET, SOCK_STREAM, 0);
-    if (sock_fd < 0) {
-        return false;
-    }
+    // Принимает входящее соединение и возвращает client_fd (или -1 при ошибке).
+    int accept_client() const;
 
-    // 2. Разрешаем повторное использование порта сразу после перезапуска
-    int opt = 1;
-    if (::setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        ::close(sock_fd);
-        return false;
-    }
+    // Закрывает слушающий сокет, если он открыт.
+    void close();
 
-    // 3. Привязываем к 0.0.0.0 и указанному порту
-    sockaddr_in addr{};
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    addr.sin_port = htons(port);
+    bool is_open() const noexcept { return fd_ >= 0; }
+    int fd() const noexcept { return fd_; }
 
-    if (::bind(sock_fd, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) < 0) {
-        ::close(sock_fd);
-        return false;
-    }
+private:
+    int fd_ = -1;
+};
 
-    // 4. Переводим в режим ожидания подключений
-    if (::listen(sock_fd, backlog) < 0) {
-        ::close(sock_fd);
-        return false;
-    }
-
-    fd_ = sock_fd;
-    return true;
-}
-
-int TcpListener::accept_client() const {
-    if (fd_ < 0) {
-        return -1;
-    }
-
-    while (true) {
-        int client_fd = ::accept(fd_, nullptr, nullptr);
-        if (client_fd < 0) {
-            if (errno == EINTR) {
-                continue; // прервано сигналом — пробуем снова
-            }
-            return -1;
-        }
-        return client_fd;
-    }
-}
-
-void TcpListener::close() {
-    if (fd_ >= 0) {
-        ::close(fd_);
-        fd_ = -1;
-    }
-}
-
-} // namespace net
+} 
