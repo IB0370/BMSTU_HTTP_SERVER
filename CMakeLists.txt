@@ -12,16 +12,19 @@ endif()
 
 find_package(Threads REQUIRED)
 
-# Общие исходники сервера (всё, кроме main.cpp).
-# Их линкуют и исполняемый файл, и тесты — список ведётся в одном месте.
-# Пример: src/storage/in_memory_storage.cpp
-set(SERVER_LIB_SOURCES
+# Общий код сервера (всё, кроме main.cpp): компилируется один раз,
+# линкуется и в server, и в тесты. Новые файлы добавляйте сюда.
+add_library(core STATIC
+  src/config/config.cpp
+  # src/storage/global_mutex_storage.cpp
 )
+target_include_directories(core PUBLIC src)
+target_link_libraries(core PUBLIC Threads::Threads)
+target_compile_options(core PRIVATE -Wall -Wextra -Wpedantic)
 
-add_executable(server ${SERVER_LIB_SOURCES} src/main.cpp)
+add_executable(server src/main.cpp)
+target_link_libraries(server PRIVATE core)
 target_compile_options(server PRIVATE -Wall -Wextra -Wpedantic)
-target_link_libraries(server PRIVATE Threads::Threads)
-target_include_directories(server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 include(CTest)
 if(BUILD_TESTING)

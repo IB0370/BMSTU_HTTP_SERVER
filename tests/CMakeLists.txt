@@ -14,18 +14,16 @@ if(NOT GTest_FOUND)
   FetchContent_MakeAvailable(googletest)
 endif()
 
-set(TEST_SOURCES
+add_executable(server_tests
   smoke_test.cpp
   storage_test.cpp
+  config_test.cpp
 )
-
-add_executable(server_tests ${TEST_SOURCES} ${SERVER_LIB_SOURCES})
-target_include_directories(server_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_options(server_tests PRIVATE -Wall -Wextra -Wpedantic)
 target_link_libraries(server_tests PRIVATE
+  core
   GTest::gtest
   GTest::gtest_main
-  Threads::Threads
 )
 
 include(GoogleTest)
